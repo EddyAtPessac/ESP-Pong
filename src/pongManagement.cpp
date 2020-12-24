@@ -10,12 +10,10 @@ bool isAutoMode(void);
 extern SSD1306Wire  oLed;   // Defined in main
 
 
-void drawCourt();
-
 const unsigned long PADDLE_RATE = 33;
 const unsigned long BALL_RATE = 16;
 const uint8_t PADDLE_HEIGHT = 15; //24;
-const int PLAYER_MOVE = 2;      
+const int PLAYER_MOVE = 2;              // The player is a cheater: he's move 2x faster than the Cpu
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
@@ -37,26 +35,34 @@ int8_t player_y = 16;
 int playerScore = 0;
 int cpuScore  = 0;
 
+void drawCourt();
+
+
+// Initialise timers and display for the game
 void pongSetup(void)
 {
     unsigned long start = millis();
     oLed.clear();
     drawCourt();
     oLed.display();
-    while(millis() - start < 2000); // Wait 2s before starting
+    // Show the court 2 seconds before starting
+    while(millis() - start < 2000); 
     ball_update = millis();
     paddle_update = ball_update;
 }
 
+// Update the score on the oLed, with the values of cpuScore and playerScore
 void displayScore(void) {
-    static char strScore[8];
+    static char strScore[8];    // Keep the old string in memory to rewrite it in black (to erase the old score)
     oLed.setColor(BLACK);       // Erase old score
     oLed.drawString( HALF_SCREEN_WITH, 5, String(strScore));
     sprintf(strScore,"%02d-%02d", cpuScore, playerScore);
-    oLed.setColor(WHITE);
+    oLed.setColor(WHITE);       // Display new score
     oLed.drawString( HALF_SCREEN_WITH, 5, String(strScore));
 }
 
+// Calculate the next position of the ball. Check if it touch another thing 
+// and update the score if it hurt the vertical wall
 bool ballUpdate(void) {
     bool update = false;
     if(millis() > ball_update) {
@@ -115,7 +121,8 @@ bool ballUpdate(void) {
     return(update);
 }
 
-// Move padle for padMove pixel. Up is a negative value, Down is a positive value
+// Move and display padle for padMove pixel. Up is a negative value, Down is a positive value
+// pPadY is updated with the new Y value.
 void movePadle(int padX, int8_t &pPadY, int padHeight, int padMove) {
     //if (padMove == 0) return; // Nothing to do
     // Player paddle
@@ -123,13 +130,11 @@ void movePadle(int padX, int8_t &pPadY, int padHeight, int padMove) {
     oLed.drawVerticalLine(padX, pPadY, padHeight);
     // Calculate next position 
     if(padMove > 0 ) {  // Go Down to COURT_HEIGHT
-        //Serial.printf("Down y=%d\n", pPadY);
         if( (pPadY + padHeight + padMove) < COURT_HEIGHT ) {
             pPadY += padMove;
         }
     }
     else if(padMove < 0) {          // Go up
-        //Serial.printf("Up   y=%d\n", pPadY);
         if ( pPadY >  -padMove ) {
             pPadY += padMove;
         }
@@ -138,6 +143,7 @@ void movePadle(int padX, int8_t &pPadY, int padHeight, int padMove) {
     oLed.drawVerticalLine(padX, pPadY, padHeight);
 }
 
+// Return the desired moving to make padle follow the Y position of the ball
 int8_t moveYToBall(int8_t yPadle) {
     const uint8_t half_paddle = PADDLE_HEIGHT >> 1;
     int8_t move = 0;
@@ -150,6 +156,7 @@ int8_t moveYToBall(int8_t yPadle) {
     return(move);
 }
 
+// Main loop of pong: update ball and padles positions
 void pongLoop(void)
 {
 
@@ -160,9 +167,9 @@ void pongLoop(void)
     static bool down_state = false;
     
 
-    update |= ballUpdate();
+    update |= ballUpdate();     // Move the ball if it is time
 
-    if(time > paddle_update) {
+    if(time > paddle_update) {      // if it is time to move the padles
         paddle_update += PADDLE_RATE;
         update = true;
 
@@ -191,13 +198,13 @@ void pongLoop(void)
 
 }
 
-
+// Initial display of the game. 
 void drawCourt() {
     // The court
     oLed.setColor(WHITE);
     oLed.drawRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
     oLed.setPixel(ball_x, ball_y);  // The ball at the initial position 
-    movePadle(CPU_X, cpu_y, PADDLE_HEIGHT, 0);
-    movePadle(PLAYER_X, player_y, PADDLE_HEIGHT, 0);
-    displayScore();
+    movePadle(CPU_X, cpu_y, PADDLE_HEIGHT, 0);  // Display the padle without move
+    movePadle(PLAYER_X, player_y, PADDLE_HEIGHT, 0);  // same thing
+    displayScore(); 
 }

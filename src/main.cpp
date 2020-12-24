@@ -2,11 +2,18 @@
 #include "heltec.h"
 #include "pongManagement.h"
 
+/*
+Main for ESP-PONG. In this code, we define the pins used for up and down button,
+and initialise the on-board display
+*/
 
 #define UP_BUTTON 12
 #define DOWN_BUTTON 13
 
- SSD1306Wire  oLed = SSD1306Wire (0x3c, SDA_OLED, SCL_OLED, RST_OLED, GEOMETRY_128_64);
+// The SSD1306Wire class is defined in the Heltec library. Heltec define its own 'display' object
+// we define here our 'oLed' object witch do the same job 
+// ** ! Do not add the Adafruit SSD1306xxx and others library.  ! ***
+SSD1306Wire  oLed = SSD1306Wire (0x3c, SDA_OLED, SCL_OLED, RST_OLED, GEOMETRY_128_64);
 
 // SDA_OLED and other are defined in Pins_Arduino.h  (Heltec ESP32 board)
 #define OLED_ARDS 0x3C
@@ -17,14 +24,14 @@
 #define MEDIUM_FONT ArialMT_Plain_16
 #define BIG_FONT ArialMT_Plain_24
 
-
+  // Initialise the on-board oled display. We do the same things that Heltec do with begin
   void  displayInit() {
-    //Initialiser l'afficheur oled (sinon ne fonctionne pas)
+    // Heltec.begin(true, false, true); // Not used, we drive directely the display
+    // Initialise the display with the reset pin (else it doesn't work)
     pinMode(16,OUTPUT);
     digitalWrite(OLED_RESET, LOW); // set  GPIO16 low to reset OLED
     delay(50); 
     digitalWrite(OLED_RESET, HIGH); // while OLED is running, must set GPIO16 to high
-
     // Initialiser interface de l'OLED
     oLed.init();
 
@@ -37,15 +44,15 @@
 
 
 
-long lastBpAction = 0;
+long lastBpAction = 0;  // No button pressed time counter
 
-// Return true if Up or Down button is pressed
+// Return true if Up button is pressed
 bool isUpBp() {
   bool press = (digitalRead(UP_BUTTON) == LOW);
   if (press) lastBpAction = millis();
   return(press);
 }
-
+// Return true if Down button is pressed
 bool isDownBp() {
   bool press = (digitalRead(DOWN_BUTTON) == LOW);
   if (press) lastBpAction = millis();
@@ -67,10 +74,9 @@ bool isAutoMode() {
 }
 
 
-
-
 void setup() {
-  // put your setup code here, to run once:
+  // Heltec general initialisation is here, but as we drive directly oLed we don't need the Heltec.begin actions
+  // Heltec.begin(true /* Display Ena*/,  false /* Lora ena */, true /* serial ena */); 
   displayInit();
   pinMode(UP_BUTTON, INPUT_PULLUP);
   pinMode(DOWN_BUTTON, INPUT_PULLUP);
@@ -81,6 +87,5 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
   pongLoop();
 }
